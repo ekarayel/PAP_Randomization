@@ -1,5 +1,5 @@
 theory Rabin_Closest_Pair 
-  imports "HOL.Real" Complex_Main
+  imports "HOL-Probability.Probability_Mass_Function" Complex_Main
 begin
   
 (* We verify Rabin's closest pair algorithm in 2D Euclidean space *)
@@ -44,7 +44,7 @@ fun build_pairs :: "point list => (point * point) list" where
 lemma build_pairs_correct: " a \<in> set xs \<Longrightarrow> b \<in> set xs \<Longrightarrow> a \<noteq> b \<Longrightarrow>  (a, b) \<in> set (build_pairs xs) \<or> (b, a) \<in> set (build_pairs xs)"
 by (induction xs) auto
 
-section "Grids"
+section "Grid Map"
 
 
 (* Squares in 2D space can be represented with two end points.
@@ -233,7 +233,7 @@ proof -
     using dist_compact_on_finite by fast
   then obtain q where "q \<in> set (neighbors m x y) - {p}" "\<forall> r \<in> set (neighbors m x y)  - {p}. dist p r \<ge> dist p q"
     by blast
-  then show ?thesis using  dist_of_non_neighbors[of p m x y xs d] assms by fastforce
+  then show ?thesis using dist_of_non_neighbors[of p m x y xs d] assms by fastforce
 qed 
 
 definition find_in_grid_map :: "int \<Rightarrow> int \<Rightarrow> grid_map \<Rightarrow> real" where 
@@ -259,10 +259,80 @@ proof (cases "set (neighbors m x y) - {p} \<noteq> {}")
   then have "find_in_grid_map x y m \<le> dist p r"  
     unfolding find_in_grid_map_def
     using dist_symm by (cases; metis brute_force_dist_correct)+
-  then show ?thesis using aux by argo sorry
+  then show ?thesis using aux by argo 
 next
   case False
   then show ?thesis using dist_of_non_neighbors[of p m x y xs d "fst q" "snd q"] assms by auto 
 qed
+
+section "Introduce Randomization" 
+
+fun traverse_grid_map :: "point list \<Rightarrow> real \<Rightarrow> grid_map \<Rightarrow> real"
+	where 
+"traverse_grid_map [] d _ = d" | 
+"traverse_grid_map (z # zs) d m = (
+	let x = \<lfloor>(fst z) / d\<rfloor>; y = \<lfloor>(snd z) / d\<rfloor>; 
+	prev =  (traverse_grid_map zs d m); curr = find_in_grid_map x y m in
+	if prev > curr then curr else prev
+)"
+
+theorem traverse_grid_map_correct:
+	assumes "d > 0" "p \<in> set xs" "q \<in> set xs" "p \<noteq> q" "m = build_grid_map xs d (\<lambda>_ _. [])"
+	shows "traverse_grid_map xs d m \<le> min d (dist p q)"
+proof -
+	let ?x1 = "\<lfloor>fst p / d\<rfloor>" let ?y1 = "\<lfloor>snd p / d\<rfloor>"
+	let ?x2 = "\<lfloor>fst q / d\<rfloor>" let ?y2 = "\<lfloor>snd q / d\<rfloor>"
+	from assms have "p \<in> set (m ?x1 ?y1)" "q \<in> set (m ?x2 ?y2)" 
+   	using build_grid_map_sound by blast+ 
+  moreover then have "in_map p m" "in_map q m"
+		unfolding in_map_def by blast+ 
+	ultimately have A: "dist p q \<ge> find_in_grid_map ?x1 ?y1 m \<or> dist p q \<ge> d" and
+									"dist q p \<ge> find_in_grid_map ?x2 ?y2 m \<or> dist q p \<ge> d"
+		using find_in_grid_map_correct assms(1, 4, 5) by auto
+	then have B: "dist p q \<ge> find_in_grid_map ?x2 ?y2 m \<or> dist p q \<ge> d"
+		using dist_symm by auto
+	from A B assms(1-4) show ?thesis 
+	proof (induction xs d m rule: traverse_grid_map.induct)
+		case (2 z zs d m)
+		have C: "traverse_grid_map zs d m \<le> d" 
+			by (induction zs)  (auto simp: Let_def)
+		from 2 consider "p = z" | "q = z" | "p \<in> set zs \<and> q \<in> set zs"
+  	by force
+ 		 then show ?case
+		proof cases
+			case 1
+			then show ?thesis using 2 C by (auto simp: Let_def)
+		next
+			case 2
+			then show ?thesis using "local.2.prems" C by (auto simp: Let_def)
+		next
+			case 3
+			with "2" have "traverse_grid_map zs d m \<le> min d (Rabin_Closest_Pair.dist p q)" 
+				by blast
+			then show ?thesis by (auto simp: Let_def)
+		qed
+	qed auto
+qed 
+
+(*This shows that our traversal indeed finds the closest pair of points*)
+	
+
+definition first_phase :: "point list \<Rightarrow> real pmf" where 
+"first_phase ps = do {
+	xs \<leftarrow> replicate_pmf (nat \<lceil>sqrt (length ps)\<rceil>) (pmf_of_set (set ps));
+	return_pmf (brute_force_dist (build_pairs xs))
+}"
+
+definition "second_phase ps d \<equiv> (
+	let m = build_grid_map ps d (\<lambda>_ _. []) in 
+	traverse_grid_map ps d m
+)"
+
+definition rabins_closest_pair :: "point list \<Rightarrow> real pmf" where 
+"rabins_closest_pair ps = do {
+	d \<leftarrow> first_phase ps;
+	return_pmf (second_phase ps d)
+} "
+
 
 end 
