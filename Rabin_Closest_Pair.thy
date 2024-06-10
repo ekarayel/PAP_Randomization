@@ -575,6 +575,13 @@ proof -
 			by blast 
 		then have "dist p q = d"
 			using dist_symm by simp
+		have B: "length [p, q] = 2" "set (build_pairs[p, q]) = {(p, q)}" 
+			using Nil by auto
+		have "measure (first_phase [p, q]) {x. x \<ge> d} = 
+							measure (replicate_pmf (length [p, q]) (pmf_of_set (set (build_pairs[p, q])))) {xs . brute_force_dist xs \<ge> d}" 
+			by (simp add: first_phase_def map_pmf_def[symmetric])
+		also have "... = measure (replicate_pmf 2 (pmf_of_set {(p, q)})) {xs. brute_force_dist xs \<ge> d}"
+			by (subst B)+ blast
 		then show ?case sorry
 	next
 		case (Cons a qs)

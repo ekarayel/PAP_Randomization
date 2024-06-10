@@ -546,15 +546,52 @@ definition rabins_closest_pair :: "point list \<Rightarrow> real pmf" where
 }"
 
 (*The Las Vegas algorithm outputs the correct distance with probability 1*)
+lemma map_replicate_pmf: "map_pmf (map f) (replicate_pmf n p) = replicate_pmf n (map_pmf f p)"
+	sorry
 
 lemma first_phase_correct:
 	fixes d 
 	assumes "distinct ps" "closest_dist ps d" "length ps \<ge> 2" 
-	shows "measure (first_phase ps) {x. x \<ge> d} = 1" (is "?L = ?R")
+	shows "measure (first_phase ps) {x. x \<ge> d} = 1" 
 proof -
-	show ?thesis sorry
+	let ?ps = "pmf_of_set (set (build_pairs ps))"
+	let ?xs = "replicate_pmf (length ps) ?ps"
+	have "\<exists>p q qs. ps = p # q # qs" 
+		by (metis assms(3) Suc_le_mono length_0_conv length_Cons nle_le numerals(2) remdups_adj.cases zero_order(1))
+	then obtain p q qs where "ps = p # q # qs" 
+		by blast
+	then have prems: "distinct (p # q # qs)" "closest_dist (p # q # qs) d"
+		using assms by blast+
+	then have "measure (first_phase (p # q # qs)) {x. x \<ge> d} = 1" (is "?L = ?R")
+	proof (induction qs arbitrary: p q)
+		case Nil
+		then have "\<exists>r s. r \<in> set [p, q] \<and> s \<in> set [p, q] \<and> r \<noteq> s \<and> Rabin_Closest_Pair.dist r s = d"
+			unfolding closest_dist_def by auto
+		then obtain r s where "r \<in> set [p, q]" "s \<in> set [p, q]" "r \<noteq> s" "dist r s = d" 
+			by blast
+		moreover then have "r = p \<and> s = q \<or> r = q \<and> s = p" 
+			by auto
+		ultimately have "dist p q = d \<or> dist q p = d" 
+			by blast 
+		then have "dist p q = d"
+			using dist_symm by simp
+		then show ?case sorry
+	next
+		case (Cons a qs)
+		then show ?case 
+		proof (cases "closest_dist (q # a # qs) d")
+			case True
+			with Cons have "measure (first_phase (q # a # qs)) {a. d \<le> a} = 1"
+				by auto
+			then show ?thesis sorry
+		next
+			case False
+			then show ?thesis sorry
+		qed
+	qed
+	then show ?thesis
+		using \<open>ps = p # q # qs\<close> by blast
 qed 
-find_theorems replicate_pmf
 
 theorem rabins_closest_pair_correct: 
 	fixes d
