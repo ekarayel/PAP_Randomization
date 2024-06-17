@@ -41,6 +41,9 @@ definition C_closest_pair :: "point list \<Rightarrow> nat pmf" where
 	return_pmf (1 + (C_traverse_grids ps d))
 }"
 
+abbreviation "neighbor_set xs d \<equiv> (\<lambda>(x, y). 
+		{(x', y') | x' y'. (x', y') \<in> set xs \<and> dist (x, y) (x', y') \<le> sqrt (8 * d\<^sup>2)})"
+
 section "Proof and Analysis" 
 
 (*
@@ -67,42 +70,62 @@ qed
 
 lemma neighborhood_sz_upper:
 	assumes "d > 0" "distinct xs"
-	shows "length (neighborhood xs d x y) 
-		\<le> length (filter (\<lambda>q. dist p q < sqrt (8 * d^2) \<and> p \<noteq> q) xs)"
+	shows "length (neighborhood xs d x y) \<le> card (neighbor_set xs d (x, y))"
 proof -
-	have "q \<in> set (neighborhood xs d x y) \<Longrightarrow> dist p q < sqrt (8 * d^2) \<and> p \<noteq> q" for q 
-		using dist_of_neighbors[OF assms(1)]
-		sorry
-	then have "set (neighborhood xs d x y) \<subseteq> 
-		set (filter (\<lambda>q. dist p q < sqrt (8 * d^2)) xs)"
-		using neighborhood_subset by fastforce
-	moreover have "distinct (filter (\<lambda>q. dist p q < sqrt (8 * d^2)) xs)"
-		"distinct (neighborhood xs d x y)"
-		"finite (set (filter (\<lambda>q. dist p q < sqrt (8 * d^2)) xs))"
-		using assms neighborhood_distinct by force+
-	ultimately  show ?thesis 
-		using distinct_card[OF  "neighborhood xs d x y"] 
-					distinct_card[of "filter (\<lambda>q. dist p q < sqrt (8 * d^2)) xs"]
-					card_mono[of "set (filter (\<lambda>q. dist p q < sqrt (8 * d^2)) xs)"]
-			sorry
+	let ?S = "neighbor_set xs d (x, y)"
+	have "q \<in> set (neighborhood xs d x y) \<Longrightarrow> q \<in> set xs \<and> dist (x, y) q \<le> sqrt (8 * d^2)" for q 
+		using dist_of_neighbors[OF assms(1), of _ _ xs x y]  neighborhood_subset[of xs d x y]
+		by (metis in_mono prod.collapse)
+	then have A: "set (neighborhood xs d x y) \<subseteq> ?S" 
+		by fast
+	have "?S \<subseteq> set xs" 
+		by fastforce
+	then have "finite ?S" 
+		using finite_subset by fast
+	with A have "card (set (neighborhood xs d x y)) \<le> card ?S" 
+		using card_mono[of ?S] by blast
+	then show ?thesis 
+		using distinct_card[of "neighborhood xs d x y"] neighborhood_distinct[OF assms(2)] 
+		by auto
 qed 
-
 theorem traverse_grids_upper:
 	assumes "d > 0" "distinct xs" 
-	shows "C_traverse_grids xs d \<le> length xs 
-			+ card (\<Union>{{(x', y') | x' y'. (x', y') \<in> set xs \<and> dist (x, y) (x', y') \<le> sqrt (8 * d\<^sup>2)} 
-														| x y. (x, y) \<in> set xs})"
+	shows "C_traverse_grids xs d \<le> card (\<Union>{(neighbor_set xs d p) | p. p \<in> set xs}) + length xs "
 proof -
-	let ?f = "(\<lambda>p. card {q | q. q \<in> set xs \<and> dist p q \<le> sqrt (8 * d\<^sup>2)})"
+	let ?f = "(\<lambda>p. card (neighbor_set xs d p))"
+	have A: "inj_on (neighbor_set xs d) (set xs)" 
+		sorry
+	have B: "disjoint ((neighbor_set xs d) ` set xs)"
+		sorry
+	have C: "N \<in> ((neighbor_set xs d) ` set xs) \<Longrightarrow> finite N" for N
+		using finite_points 
+		sorry
+	have D: "{(neighbor_set xs d p) | p. p \<in> set xs} = (neighbor_set xs d) ` set xs" 
+		by blast
 	have "\<And>p. p \<in> set xs \<Longrightarrow> C_find_in_grids xs d p \<le> ?f p"
 		using neighborhood_sz_upper[OF assms] C_find_in_grids_eq_neigborhood_sz by force
 	then have "sum_list (map (C_find_in_grids xs d) xs) \<le> sum_list (map ?f xs)"
 		using sum_list_mono[of xs "C_find_in_grids xs d" ?f]
 		by fastforce
-	also have "... = sum ((!) (map ?f xs)) {0..<length (map ?f xs)}" 
-		using sum.list_conv_set_nth by blast
-	thm sum.list_conv_set_nth
-	find_theorems  "sum_list (map _ _) = sum _ _"
-	show ?thesis sorry
+	also have "... = sum ?f (set xs)"
+		using monoid_add_class.sum_list_distinct_conv_sum_set[OF assms(2)] by fast
+	also have "... = sum card ((neighbor_set xs d) ` set xs)" 
+		using sum.reindex[OF A,of card] by fastforce
+	also have "... = card (\<Union> ((neighbor_set xs d) ` set xs))"
+		using card_Union_disjoint[OF B C] by presburger
+	also have "... = card (\<Union> {(neighbor_set xs d p) | p. p \<in> set xs})" 
+		using D by argo
+	finally have "sum_list (map (C_find_in_grids xs d) xs) \<le> card (\<Union> {(neighbor_set xs d p) | p. p \<in> set xs})"
+		.
+	moreover have "length (filter ((<) 0) (map (find_in_grids xs d) xs)) \<le> length xs" 
+		by force
+	ultimately show ?thesis
+		unfolding C_traverse_grids_def Let_def
+		by (auto simp add: add_le_mono) 
 qed 
+
+lemma "\<Union>{(neighbor_set xs d p) | p. p \<in> set xs} = {}"
+
+thm sum.reindex
+thm card_Union_disjoint
 end
