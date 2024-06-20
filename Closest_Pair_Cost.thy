@@ -42,7 +42,7 @@ definition C_closest_pair :: "point list \<Rightarrow> nat pmf" where
 }"
 
 abbreviation "neighbor_set xs d \<equiv> (\<lambda>(x, y). 
-		{(x', y') | x' y'. (x', y') \<in> set xs \<and> dist (x, y) (x', y') \<le> sqrt (8 * d\<^sup>2)})"
+		{((x, y), (x', y')) | x' y'. (x', y') \<in> set xs \<and> dist (x, y) (x', y') \<le> sqrt (8 * d\<^sup>2)})"
 
 section "Proof and Analysis" 
 
@@ -59,13 +59,19 @@ lemma C_find_in_grids_eq_neigborhood_sz:
 	unfolding C_find_in_grids_def Let_def by simp
 
 lemma finite_points: 
-"finite {q | q. q \<in> set xs \<and> dist (x, y)q \<le> sqrt (8 * d\<^sup>2)}"
+"finite {(p, q) | q. q \<in> set xs \<and> dist p q \<le> sqrt (8 * d\<^sup>2)}"
 proof - 
 	have "finite (set xs)" 
-		"{q | q. q \<in> set xs \<and> dist (x, y) q \<le> sqrt (8 * d\<^sup>2)} \<subseteq> set xs"
+		"{q | q. q \<in> set xs \<and> dist p q \<le> sqrt (8 * d\<^sup>2)} \<subseteq> set xs"
 	  by blast+
-	then show ?thesis 
-	using finite_subset[of _ "set xs"] by presburger
+	then have "finite {q | q. q \<in> set xs \<and> dist p q \<le> sqrt (8 * d\<^sup>2)}"
+		by simp
+	moreover have "Pair p ` {q | q. q \<in> set xs \<and> dist p q \<le> sqrt (8 * d\<^sup>2)} 
+		= {(p, q) | q. q \<in> set xs \<and> dist p q \<le> sqrt (8 * d\<^sup>2)}"
+		by blast
+	ultimately show ?thesis 
+		using finite_imageI[of "{q | q. q \<in> set xs \<and> dist p q \<le> sqrt (8 * d\<^sup>2)}" "\<lambda>q. (p, q)"] 
+		by argo
 qed 
 
 lemma neighborhood_sz_upper:
@@ -76,30 +82,49 @@ proof -
 	have "q \<in> set (neighborhood xs d x y) \<Longrightarrow> q \<in> set xs \<and> dist (x, y) q \<le> sqrt (8 * d^2)" for q 
 		using dist_of_neighbors[OF assms(1), of _ _ xs x y]  neighborhood_subset[of xs d x y]
 		by (metis in_mono prod.collapse)
-	then have A: "set (neighborhood xs d x y) \<subseteq> ?S" 
+	then have A: "Pair (x, y) ` set (neighborhood xs d x y) \<subseteq> ?S" 
 		by fast
-	have "?S \<subseteq> set xs" 
+	have "?S \<subseteq> Pair (x, y) ` set xs" 
 		by fastforce
 	then have "finite ?S" 
 		using finite_subset by fast
-	with A have "card (set (neighborhood xs d x y)) \<le> card ?S" 
-		using card_mono[of ?S] by blast
-	then show ?thesis 
-		using distinct_card[of "neighborhood xs d x y"] neighborhood_distinct[OF assms(2)] 
-		by auto
-qed 
+	with A have B: "card (Pair (x, y)` set (neighborhood xs d x y)) \<le> card ?S" 
+		using card_mono[of ?S] by blast thm distinct_card
+	have "distinct ys \<Longrightarrow> distinct (map (Pair (x, y)) ys)" for ys sledgehammer
+		by (induction ys) auto
+	then have "distinct (map (Pair (x, y)) (neighborhood xs d x y))" 
+		using neighborhood_distinct[OF assms(2), of d x y] 
+		by blast
+	moreover have "length (map (Pair (x, y)) (neighborhood xs d x y)) = length (neighborhood xs d x y)"
+		by simp
+	ultimately show ?thesis 
+		using B distinct_card[of "(map (Pair (x, y)) (neighborhood xs d x y))"]
+		by fastforce
+qed  
+
+thm inj_on_def
+
 theorem traverse_grids_upper:
 	assumes "d > 0" "distinct xs" 
 	shows "C_traverse_grids xs d \<le> card (\<Union>{(neighbor_set xs d p) | p. p \<in> set xs}) + length xs "
 proof -
 	let ?f = "(\<lambda>p. card (neighbor_set xs d p))"
-	have A: "inj_on (neighbor_set xs d) (set xs)" 
-		sorry
-	have B: "disjoint ((neighbor_set xs d) ` set xs)"
-		sorry
+	have A: "disjoint ((neighbor_set xs d) ` set xs)"
+	proof -
+		have "\<forall>a \<in> set xs. \<forall>b \<in> set xs. a \<noteq> b \<longrightarrow> neighbor_set xs d a \<inter> neighbor_set xs d b = {}"
+			by fast
+		then show ?thesis
+			unfolding disjoint_def by blast
+	qed 
+	then have B: "inj_on (neighbor_set xs d) (set xs)" 
+	proof -
+		have "\<forall>a \<in> set xs. \<forall>b \<in> set xs. a \<noteq> b \<longrightarrow> neighbor_set xs d a \<inter> neighbor_set xs d b = {}"
+			by fast
+		then show ?thesis
+			unfolding inj_on_def by fastforce
+	qed
 	have C: "N \<in> ((neighbor_set xs d) ` set xs) \<Longrightarrow> finite N" for N
-		using finite_points 
-		sorry
+		using finite_points by auto
 	have D: "{(neighbor_set xs d p) | p. p \<in> set xs} = (neighbor_set xs d) ` set xs" 
 		by blast
 	have "\<And>p. p \<in> set xs \<Longrightarrow> C_find_in_grids xs d p \<le> ?f p"
@@ -110,9 +135,9 @@ proof -
 	also have "... = sum ?f (set xs)"
 		using monoid_add_class.sum_list_distinct_conv_sum_set[OF assms(2)] by fast
 	also have "... = sum card ((neighbor_set xs d) ` set xs)" 
-		using sum.reindex[OF A,of card] by fastforce
+		using sum.reindex[OF B,of card] by fastforce
 	also have "... = card (\<Union> ((neighbor_set xs d) ` set xs))"
-		using card_Union_disjoint[OF B C] by presburger
+		using card_Union_disjoint[OF A C] by presburger
 	also have "... = card (\<Union> {(neighbor_set xs d p) | p. p \<in> set xs})" 
 		using D by argo
 	finally have "sum_list (map (C_find_in_grids xs d) xs) \<le> card (\<Union> {(neighbor_set xs d p) | p. p \<in> set xs})"
@@ -124,8 +149,9 @@ proof -
 		by (auto simp add: add_le_mono) 
 qed 
 
-lemma "\<Union>{(neighbor_set xs d p) | p. p \<in> set xs} = {}"
-
+lemma "\<Union>{(neighbor_set xs d p) | p. p \<in> set xs} = {(p, q) 
+		| p q. p \<in> set xs \<and> q \<in> set xs \<and>  dist p q \<le> sqrt (8 * d\<^sup>2)}"
+	by auto
 thm sum.reindex
 thm card_Union_disjoint
 end
