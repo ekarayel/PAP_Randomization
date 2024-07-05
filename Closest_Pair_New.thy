@@ -390,7 +390,7 @@ qed
 
 lemma dist_of_neighbors:
 	assumes "d > 0" "(x', y') \<in> set (neighborhood xs d x y)" 
-	shows "dist (x, y) (x', y') \<le> sqrt (8 * d^2)"
+	shows "dist (x, y) (x', y') < sqrt (8 * d^2)"
 proof -
 	let ?a = "\<lfloor>x/d\<rfloor>" let ?b = "\<lfloor>y/d\<rfloor>"
 	let ?xg = "{?a - 1, ?a, ?a + 1}" let ?yg = "{?b - 1, ?b, ?b + 1}"
@@ -425,7 +425,7 @@ proof -
 			by (cases; smt (verit, best) assms(1) floor_less_iff pos_le_divide_eq C)
 	qed
 
-	from A x'_bound have "x - x' \<le> d * (?a+1) - d * (?a-1)"
+	from A x'_bound have "x - x' < d * (?a+1) - d * (?a-1)"
 		by argo
 	also have "... = d * ?a + d - d * (?a-1)"
 		by (simp add: distrib_left)
@@ -433,17 +433,17 @@ proof -
 		by (simp add: distrib_left, argo)
 	also have "... = 2 * d"
 		by argo
-	finally have 1: "x - x' \<le> 2 * d" .
+	finally have 1: "x - x' < 2 * d" .
 
-	from A x'_bound have "x' - x \<le> d * (?a+2) - d * ?a"
+	from A x'_bound have "x' - x < d * (?a+2) - d * ?a"
 		by argo
 	also have "... = d * ?a + 2 * d - d * ?a"
 		by (simp add: distrib_left)
 	also have "... = 2 * d"
 		by argo
-	finally have 2: "x' - x \<le> 2 * d" .
+	finally have 2: "x' - x < 2 * d" .
 
-	from B y'_bound have "y - y' \<le> d * (?b+1) - d * (?b-1)"
+	from B y'_bound have "y - y' < d * (?b+1) - d * (?b-1)"
 		by argo
 	also have "... = d * ?b + d - d * (?b-1)"
 		by (simp add: distrib_left)
@@ -451,21 +451,21 @@ proof -
 		by (simp add: distrib_left, argo)
 	also have "... = 2 * d"
 		by argo
-	finally have 3: "y - y' \<le> 2 * d" .
+	finally have 3: "y - y' < 2 * d" .
 
-	from B y'_bound have "y' - y \<le> d * (?b+2) - d * ?b"
+	from B y'_bound have "y' - y < d * (?b+2) - d * ?b"
 		by argo
 	also have "... = d * ?b + 2 * d - d * ?b"
 		by (simp add: distrib_left)
 	also have "... = 2 * d"
 		by argo
-	finally have 4: "y' - y \<le> 2 * d" .
+	finally have 4: "y' - y < 2 * d" .
 
-	from 1 2 have "(x - x')^2 \<le> (2 * d)^2"
-		by (metis diff_ge_0_iff_ge linorder_linear power2_commute power_mono)
-	moreover from 3 4 have "(y - y')^2 \<le> (2 * d)^2"
-		by (metis diff_ge_0_iff_ge linorder_linear power2_commute power_mono)
-	ultimately have "dist (x, y) (x', y') \<le> sqrt ( (2 * d)^2 +  (2 * d)^2)"
+	from 1 2 have "(x - x')^2 < (2 * d)^2" 
+		by (smt (verit, del_insts) real_sqrt_abs real_sqrt_less_iff)
+	moreover from 3 4 have "(y - y')^2 < (2 * d)^2"
+		by (smt (verit, del_insts) real_sqrt_abs real_sqrt_less_iff)
+	ultimately have "dist (x, y) (x', y') < sqrt ( (2 * d)^2 +  (2 * d)^2)"
 		by auto
 	also have "... = sqrt (4 * d^2 + 4 * d^2)"
 		by force

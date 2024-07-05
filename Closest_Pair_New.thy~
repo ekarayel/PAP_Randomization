@@ -281,8 +281,12 @@ lemma neighborhood_subset: "set (neighborhood xs d x y) \<subseteq> set xs"
 	unfolding neighborhood_def 
 	using neighbors_subset by force
 
-lemma neighborhood_distinct: "distinct xs \<Longrightarrow> distinct (neighbors_of_point xs d a b)" 
-	unfolding neighbors_of_point_def build_grid_def by auto 
+lemma neighbors_distinct: "distinct xs \<Longrightarrow> distinct (neighbors_of_point xs d a b)" 
+	unfolding neighbors_of_point_def build_grid_def by auto
+
+lemma neighborhood_distinct: "distinct xs \<Longrightarrow> distinct (neighborhood xs d x y)" 
+	unfolding neighborhood_def 
+	using neighbors_distinct by force
 
 lemma dist_of_non_neighborhood:
 	assumes "d > 0" "p \<in> set xs" "q \<in> set xs" "q \<notin> set (neighbors_of_point xs d \<lfloor>fst p / d\<rfloor> \<lfloor>snd p / d\<rfloor>)"
