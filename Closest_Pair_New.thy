@@ -1,5 +1,5 @@
 theory Closest_Pair_New
-	  imports "HOL-Probability.Probability_Mass_Function" 
+  imports "HOL-Probability.Probability_Mass_Function"
 begin
 
 section "definitions"
