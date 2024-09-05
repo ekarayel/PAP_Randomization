@@ -1,3 +1,54 @@
+section \<open>Growth of Close Points\<close>
+
+text \<open>This section verifies a result similar to (but more general than)
+Lemma~2 by Rabin~\cite{rabin1976}. Let $N(d)$ denote the number of pairs from the point sequence
+$p_1,\ldots,p_n$, with distance less than $d$:
+
+\[
+  N(d) := | \{ (i,j) | d(p_i, p_j) < d \wedge 1 \leq i,j \leq n \} |
+\]
+
+Obviously, $N(d)$ is monotone. It is possible to show that the growth of
+$N(d)$ is bounded.
+
+In particular: 
+\[
+  N(ad) \leq (2a \sqrt{2}+3)^2 N(d)
+\]
+for all $a > 0$, $d > 0$. As far as we can tell the proof below is new.
+
+\emph{Proof:} Consider a 2D-grid with size $\alpha := \frac{d}{\sqrt{2}}$ and let us denote by $G(x,y)$
+the number of points that fall in the cell $(x,y) \in \mathbb Z \times \mathbb Z$, i.e.:
+
+\[
+G(x,y) := \left| \left\{ i \middle | \left\lfloor \frac{p_{i,1}}{\alpha} \right\rfloor = x \wedge 
+  \left\lfloor \frac{p_{i,2}}{\alpha} \right\rfloor = x \right\} \right| \textrm{,}
+\]
+where $p_{i,1}$ (resp. $p_{i,2}$) denote the first (resp. second) component of point p.
+
+Let also $s := \lceil a \sqrt{2} \rceil$.
+
+Then we can observe that
+\begin{eqnarray*}
+N(ad) & \leq & \sum_{(x,y)\in\mathbb Z\times\mathbb Z} \sum_{i=-s}^{s} \sum_{j=-s}^{s} G(x,y) G(x+i,y+j) \\
+& = & \sum_{i=-s}^{s} \sum_{j=-s}^{s} \sum_{(x,y)\in\mathbb Z\times\mathbb Z} G(x,y) G(x+i,y+j)\\
+& \leq & \sum_{i=-s}^{s} \sum_{j=-s}^{s} \left(\left(\sum_{(x,y)\in\mathbb Z\times\mathbb Z} G(x,y)^2 \right) \left(\sum_{(x,y)\in\mathbb Z\times\mathbb Z} G(x+i,y+j)^2\right) \right)^{1/2}\\
+& \leq & \sum_{i=-s}^{s} \sum_{j=-s}^{s} \left(\left(\sum_{(x,y)\in\mathbb Z\times\mathbb Z} G(x,y)^2 \right) \left(\sum_{(x,y)\in\mathbb Z\times\mathbb Z} G(x,y)^2\right) \right)^{1/2}\\
+& \leq & (2s+1)^2 \sum_{(x,y)\in\mathbb Z\times\mathbb Z} G(x,y)^2 \\
+& \leq & (2a \sqrt(2)+3)^2 \sum_{(x,y)\in\mathbb Z\times\mathbb Z} G(x,y)^2 \\
+& \leq & (2a \sqrt(2)+3)^2 N(d)
+\end{eqnarray*}
+
+The first inequality follows from the fact that if two points are $ad$ close, 
+their x-coordinates and y-coordinates will differ by at most $ad$. I.e. their grid coordinates will
+differ at most by $s$. This means the pair will be accounted for in the right hand side of the
+inequality.
+
+The third inequality is an application of the Caucy-Schwarz inequality.
+
+The last inequality follows from the fact that the largest possible distance of two points
+in the same grid cell is $d$. \qed\<close>
+
 theory Randomized_Closest_Pair_Growth
   imports
     "HOL-Library.Sublist"
@@ -239,6 +290,8 @@ proof -
   hence "finite (f -` {x. filter (\<lambda>p. to_grid d p = x) xs \<noteq> []})" by (intro finite_vimageI assms)
   thus ?thesis by (simp add:vimage_def)
 qed
+
+text \<open>Main result of this section:\<close>
 
 lemma growth_lemma:
   fixes xs :: "point list"

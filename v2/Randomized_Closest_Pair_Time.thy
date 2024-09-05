@@ -1,10 +1,41 @@
+section \<open>Speed\<close>
+
+text \<open>In this section, we verify that the running time of the algorithm is linear with respect
+to the length of the point sequence $p_1,\ldots,p_n$.
+
+\emph{Proof:}
+It is easy to see that the first phase and construction of the grid requires time proportional to
+$n$. It is also easy to see that the number of point-comparisons is a bound for the number of
+operations in the second phase. It is also possible to observe that the algorithm never compares a
+point pair, if they are in non-adjacent cells, i.e., if their distance is at least $2 d \sqrt{2}$.
+
+This means, we need to show that the expectation of $N(2 d \sqrt{2})$ is proportional to $n$,
+when $d$ is chosen according to the algorithm in the first phase. Because of the observation
+from the last section, i.e., $N(2 d \sqrt{2}) \leq 11^2 N(d)$, it is enough to verify that the 
+expectation of $N(d)$ is linear.
+
+Let us consider all pair distances:
+$d_1 := d(p_1,p_2)$, $d_2 := d(p_1,p_3)$, \ldots, $d_m := d(p_{n-1},p_n)$ where 
+$m= \frac{n(n-1)}{2}$.
+
+Then we can find a permutation $\sigma : \{1,\ldots,m\} \rightarrow \{1,\ldots,m\}$, s.t., the
+distances are ordered, i.e.,
+$d_{\sigma(i)} \leq d_{\sigma(j)}$ if $1 \leq i \leq j \leq m$.
+
+The key observation is that $N(d_\sigma(i)) \leq i-1$, because $N$ counts the number of point pairs
+which are closer than $d_{\sigma(i)}$, which can only be those corresponding to $d_{\sigma(1)},
+d_{\sigma(2)}, \ldots, d_{\sigma(i-1)}$.
+
+On the other hand the algorithm chooses the smallest of $n$ random samples form $d_1,\ldots,d_m$.
+So the problem reduces to the computation of the expectation of the smallest element from $n$
+random samples from ${1,\ldots,m}$. For which the mean can be estimated to be $\frac{m+1}{n+1}$
+which is in $\mathcal O(n)$. \qed\<close>
+
 theory Randomized_Closest_Pair_Time
   imports 
     Randomized_Closest_Pair_Growth
     Approximate_Model_Counting.ApproxMCAnalysis
-      (* for replicate_pmf_Pi_pmf *)
     Distributed_Distinct_Elements.Distributed_Distinct_Elements_Balls_and_Bins 
-      (* for power_diff_est_2, card_ordered_pairs' *)
 begin
 
 lemma time_return_tpmf: "map_pmf time (return_tpmf x) = return_pmf 0"
@@ -422,6 +453,8 @@ qed
 
 definition time_closest_pair :: "real \<Rightarrow> real"
   where "time_closest_pair n = 2 + 1740 * n"
+
+text \<open>Main results of this section:\<close>
 
 theorem time_closest_pair:
   assumes "length ps \<ge> 2"

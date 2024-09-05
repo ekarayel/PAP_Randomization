@@ -1,9 +1,15 @@
 section \<open>Correctness\<close>
 
-text \<open>This section verifies that the algorithm always returns the correct result.\<close>
+text \<open>This section verifies that the algorithm always returns the correct result.
 
-theory Randomized_Closest_Pair_Correctness
-  imports Randomized_Closest_Pair_TM
+Because the algorithm checks every pair of points in the same or in neighboring cells. It is
+enough to establish that the grid distance is at least the distance of the closest pair.
+
+The latter is true by construction, because the grid distance is chosen as a minimum of actually
+occurring point distances.\<close>
+
+theory Randomized_Closest_Pair_Correct
+  imports Randomized_Closest_Pair
 begin
 
 definition min_dist :: "('a::metric_space) list \<Rightarrow> real" 
@@ -358,7 +364,9 @@ proof -
   finally show ?thesis by simp
 qed
 
-lemma closest_pair_correct:
+text \<open>Main result of this section:\<close>
+
+theorem closest_pair_correct:
   assumes "length ps \<ge> 2"
   shows "AE r in map_pmf val (closest_pair ps). r = min_dist ps"
 proof -

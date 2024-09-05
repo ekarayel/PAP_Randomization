@@ -1,12 +1,17 @@
 section \<open>Introduction\<close>
 
-text \<open>This entry formalizes (a version of) Rabin's closest points algorithm, with expected linear
-run-time. Note that the best known deterministic algorithm for this problem has run-time
-$\mathcal O(n \ln n)$ for $n$ points. As such the algorithm is remarkable and points to the strength
-of randomization.
+text \<open>This entry formalizes Rabin's randomized closest points algorithm~\cite{rabin1976}, with
+expected linear run-time.
 
-The algorithm starts by choosing a side-length $d$, and storing the points in a square-grid of that
-side-length.
+Given a sequence of points in euclidean space, the algorithm finds the pair of points with the
+smallest distance between them.
+
+Remarkable is that the best known deterministic algorithm for this problem has running time
+$\mathcal O(n \log n)$ for $n$ points~\cite[Section 1]{banyassady2007simple}. Some of them have been
+formalized in Isabelle by Rau and Nipkow~\cite{Closest_Pair_Points-AFP, rau2020}.
+
+The algorithm starts by choosing a grid-distance $d$, and storing the points in a square-grid of
+whose cells have that side-length.
 
 Then it traverses the points, computing the distance of each with the points in the same (or
 neighboring) cells in the square grid. (Two cells are considered neighboring, if they share an edge
@@ -18,31 +23,33 @@ $d$ must be chosen larger or equal to the closest-point distance of the sequence
 On the other hand, if $d$ is chosen too large, it may cause too many points ending up in the same
 cell, which increases the running time.
 
-To original algorithm by Rabin, chooses $d$ by sampling $n^{2/3}$ points and using the minimum
+The original algorithm by Rabin, chooses $d$ by sampling $n^{2/3}$ points and using the minimum
 distance of those points. This can be computed using recursion (or a sub-quadratic deterministic
 algorithm.)
 
-An improvement to the algorithm, has been observed in a blog-post by Richard Lipton. Instead of
-obtaining a sub-sample of the points in the first step to chose $d$, he observes that it is possible
-to sample $n$ independent point pairs and computing the minimum distance of the pairs. The refined
-algorithm is considerably simpler, avoiding the need for recursion. Similarly, the running time
-proof is simpler. (This entry formalizes this later version.)
+An improvement to the algorithm, has been observed in a blog-post by Richard
+Lipton~\cite{lipton2009}. Instead of obtaining a sub-sample of the points in the first step to
+chose $d$, he observes that it is possible to sample $n$ independent point pairs and computing the
+minimum distance of the pairs. The refined algorithm is considerably simpler, avoiding the need for
+recursion. Similarly, the running time proof is simpler. (This entry formalizes this later version.)
 
-In either case, the algorithm always returns the correct result with expected linear run-time.
+In either case, the algorithm always returns the correct result with expected linear running time.
 
 Note that, as far as I can tell, the proof of this new version has not been published. As such
-this entry contains an informal proof in the appendix (in addition to the formalization).
+this entry contains an informal proof for the results in each section.
 
 Something that should be noted is that we assume a hypothetical data structure for the square-grid,
 i.e., a mapping from a pair of integers identifying the cell to the points located in the cell,
 that can be initialized in time $\mathcal O(n)$ and access time proportional to the count of points
-in the cell (or $\mathcal O(1)$ if the cell is empty.)
+in the cell (or $\mathcal O(1)$ if the cell is empty.) A naive implementation of such a data
+structure would however have unbounded intialization time, if some points are really far apart.
 
-In practice such a data structure can be implemented using a hash table, with a hash function
-chosen randomly from a pair-wise independent family, to guarantee the presumed costs of the
-hypothetical data structure in expectation. However, for the sake of simplicity and consistency
-with Rabin's paper, we omit this implementation detail, and pretend the hypothetical data structure
-exists.
+The above was a discussion point that was raised by Fortune and Hopcroft~\cite{fortune1979}. 
+Later Dietzfelbinger~\cite{dietzfelbinger1997} resolved the issue by providing a concrete
+implementation of the data structure using a hash table, with a hash function chosen randomly from
+a pair-wise independent family, to guarantee the presumed costs of the hypothetical data structure
+in expectation. However, for the sake of simplicity and consistency with Rabin's paper, we omit this
+implementation detail, and pretend the hypothetical data structure exists.
 
 Note also that, even with the hash table, it would not possible to implement the algorithm in linear
 time in Isabelle directly as it requires random-access arrays.
@@ -50,7 +57,12 @@ time in Isabelle directly as it requires random-access arrays.
 The following introduces a few primitive algorithms for the time monad, which will be followed
 by the construction of the probabilistic time monad, which is necessary for the verification of
 the expected running time. After which the algorithm will be formalized. Its properties will be
-verified in the following sections.\<close>
+verified in the following sections.
+
+\paragraph{Related Work:} Closely related is a recursive meshing based approach developed by Khuller
+and  Matias~\cite{khuller1995} in 1995. Banyassady and Mulzer have given a new analysis of the 
+expected running time~\cite{banyassady2007simple} of Rabin's algorithm in 2007. However, this work 
+follows Rabin's original paper.\<close>
 
 theory Randomized_Closest_Pair
   imports 
@@ -170,7 +182,7 @@ lemma val_lift_tm:
 
 lemmas val_tpmf_simps = val_bind_tpmf val_lift_tpmf val_return_tpmf val_lift_tm 
 
-text \<open>Version of @{term "replicate_pmf"} for the probabilistic time monad.}\<close> 
+text \<open>Version of @{term "replicate_pmf"} for the probabilistic time monad.\<close> 
 
 fun replicate_tpmf :: "nat \<Rightarrow> 'a tpmf \<Rightarrow> 'a list tpmf"
   where 
@@ -236,10 +248,11 @@ definition lookup_neighborhood :: "grid \<Rightarrow> point \<Rightarrow> point 
       map_tm (g_lookup grid) cs \<bind> concat_tm \<bind> remove1_tm p
     }"
 
-text \<open>This function collects all points in the cell of the given points and those from the
+text \<open>This function collects all points in the cell of the given point and those from the
 neighboring cells. Here it is relevant to note that only half of the neighboring cells are
-taken. This is because of the symmetry, i.e., if point $p$ is north-east of point $q$, then $q$
-is south-west of point $q$.\<close>
+taken. This is because of symmetry, i.e., if point $p$ is north-east of point $q$, then $q$
+is south-west of point $q$. Since all points are being traversed it is enough to restrict
+the neighbor set.\<close>
 
 definition calc_dists_neighborhood :: "grid \<Rightarrow> point \<Rightarrow> real list tm"
   where "calc_dists_neighborhood grid p =
