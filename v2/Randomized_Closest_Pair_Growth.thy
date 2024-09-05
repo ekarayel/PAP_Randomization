@@ -1,5 +1,7 @@
-theory Randomized_Closest_Points_Approximation
-  imports Closest_Pair_New "HOL-Library.Sublist"
+theory Randomized_Closest_Pair_Growth
+  imports
+    "HOL-Library.Sublist"
+    Randomized_Closest_Pair_Correct
 begin
 
 lemma inj_translate:
@@ -40,7 +42,6 @@ proof -
   finally show ?thesis by simp
 qed
 
-
 lemma cauchy_schwarz': 
   assumes "finite {i \<in> S. f i \<noteq> 0}"
   assumes "finite {i \<in> S. g i \<noteq> 0}"
@@ -78,98 +79,13 @@ qed
 
 end
 
-lemma multiset_filter_mono_2:
-  assumes "\<And>x. x \<in> set_mset xs \<Longrightarrow> P x \<Longrightarrow> Q x"
-  shows "filter_mset P xs \<subseteq># filter_mset Q xs" (is "?L \<subseteq># ?R")
-proof -
-  have "?L = filter_mset (\<lambda>x. Q x \<and> P x) xs" using assms by (intro filter_mset_cong) auto
-  also have "... = filter_mset P (filter_mset Q xs)" by (simp add:filter_filter_mset)
-  also have "... \<subseteq># ?R" by simp
-  finally show ?thesis by simp
-qed
-
-lemma filter_mset_disj: 
-  "filter_mset (\<lambda>x. p x \<or> q x) xs = filter_mset (\<lambda>x. p x \<and> \<not> q x) xs + filter_mset q xs"
-  by (induction xs) auto
-
-lemma size_filter_mset_decompose:
-  assumes "finite T"
-  shows "size (filter_mset (\<lambda>x. f x \<in> T) xs) = (\<Sum>t \<in> T. size (filter_mset (\<lambda>x. f x = t) xs))"
-  using assms
-proof (induction T)
-  case empty thus ?case by simp
-next
-  case (insert x F) thus ?case by (simp add:filter_mset_disj) metis
-qed
-
-lemma size_filter_mset_decompose':
-  "size (filter_mset (\<lambda>x. f x \<in> T) xs) = sum' (\<lambda>t. size (filter_mset (\<lambda>x. f x = t) xs)) T"
-  (is "?L = ?R")
-proof -
-  let ?T = "f ` set_mset xs \<inter> T"
-  have "?L = size (filter_mset (\<lambda>x. f x \<in> ?T) xs)" 
-    by (intro arg_cong[where f="size"] filter_mset_cong) auto
-  also have "... = (\<Sum>t \<in> ?T. size (filter_mset (\<lambda>x. f x = t) xs))"
-    by (intro size_filter_mset_decompose) auto
-  also have "... = sum' (\<lambda>t. size (filter_mset (\<lambda>x. f x = t) xs)) ?T"
-    by (intro sum.eq_sum[symmetric]) auto
-  also have "... = ?R" by (intro sum.mono_neutral_left') auto
-  finally show ?thesis by simp
-qed
-
-lemma filter_product:
-  "filter (\<lambda>x. P (fst x)\<and>Q (snd x)) (List.product xs ys) = List.product (filter P xs) (filter Q ys)"
-proof (induction xs)
-  case Nil thus ?case by simp
-next
-  case (Cons xh xt) thus ?case by (simp add:filter_map comp_def)
-qed
-
-lemma floor_diff_bound: "\<bar>\<lfloor>x\<rfloor>-\<lfloor>y\<rfloor>\<bar> \<le> \<lceil>\<bar>x - (y::real)\<bar>\<rceil>"
-  by linarith
-
-
-lemma power2_strict_mono:
-  fixes x y :: "'a :: linordered_idom"
-  assumes "\<bar>x\<bar> < \<bar>y\<bar>"
-  shows "x^2 < y^2"
-  using assms unfolding power2_eq_square  
-  by (metis abs_mult_less abs_mult_self_eq)
-
 
 definition "close_point_size xs d = length (filter (\<lambda>(p,q). dist p q < d) (List.product xs xs))"
-
-lemma grid_dist:
-  fixes p q :: point
-  assumes "d > 0"
-  shows 
-    "\<bar>\<lfloor>fst p/d\<rfloor> - \<lfloor>fst q/d\<rfloor>\<bar> \<le> \<lceil>dist p q/d\<rceil>"
-    "\<bar>\<lfloor>snd p/d\<rfloor> - \<lfloor>snd q/d\<rfloor>\<bar> \<le> \<lceil>dist p q/d\<rceil>"
-proof -
-  have "\<bar>\<lfloor>f p/d\<rfloor> - \<lfloor>f q/d\<rfloor>\<bar> \<le> \<lceil>dist p q/d\<rceil>" if "f = fst \<or> f = snd" for f
-  proof -
-    have "\<bar>f p - f q\<bar> = sqrt ((f p - f q)^2)" by simp
-    also have "... \<le> sqrt ((fst p - fst q)^2 + (snd p - snd q)^2)"
-      using that by (intro real_sqrt_le_mono) auto
-    also have "... = dist (fst p, snd p) (fst q, snd q)" unfolding dist.simps by simp
-    also have "... = dist p q" by simp
-    finally have "\<bar>f p - f q\<bar> \<le> dist p q" by simp
-    hence 0:"\<bar>f p /d - f q /d\<bar>\<le> dist p q /d" using assms by (simp add:field_simps)
-
-    have "\<bar>\<lfloor>f p/d\<rfloor> - \<lfloor>f q/d\<rfloor>\<bar> \<le> \<lceil>\<bar>f p /d - f q /d\<bar>\<rceil>" by (intro floor_diff_bound)
-    also have "... \<le> \<lceil>dist p q/d\<rceil>" by (intro ceiling_mono 0)
-    finally show ?thesis by simp
-  qed
-  thus 
-    "\<bar>\<lfloor>fst p/d\<rfloor> - \<lfloor>fst q/d\<rfloor>\<bar> \<le> \<lceil>dist p q/d\<rceil>"
-    "\<bar>\<lfloor>snd p/d\<rfloor> - \<lfloor>snd q/d\<rfloor>\<bar> \<le> \<lceil>dist p q/d\<rceil>"
-    by auto
-qed
 
 lemma grid_dist_upper:
   fixes p q :: point
   assumes "d > 0"
-  shows "dist p q < sqrt ((d*(\<bar>\<lfloor>fst p/d\<rfloor>-\<lfloor>fst q/d\<rfloor>\<bar>+1))^2 + (d*(\<bar>\<lfloor>snd p/d\<rfloor>-\<lfloor>snd q/d\<rfloor>\<bar>+1))^2)"
+  shows "dist p q < sqrt (\<Sum>i\<in>UNIV.(d*(\<bar>\<lfloor>p$i/d\<rfloor>-\<lfloor>q$i/d\<rfloor>\<bar>+1))^2)"
     (is "?L < ?R")
 proof -
   have a:"\<bar>x - y\<bar> < \<bar>d * real_of_int (\<bar>\<lfloor>x/d\<rfloor> - \<lfloor>y/d\<rfloor>\<bar> + 1)\<bar>" for x y :: real
@@ -182,28 +98,30 @@ proof -
       using assms by simp
     finally show ?thesis by simp
   qed
-
-  have "?L = dist (fst p, snd p) (fst q, snd q)" by simp
-  also have "... = sqrt ((fst p - fst q)\<^sup>2 + (snd p - snd q)\<^sup>2)"
-    unfolding dist.simps by simp
+  have "?L =  sqrt (\<Sum>i\<in>UNIV. (p $ i - q $ i)\<^sup>2)"
+    unfolding dist_vec_def dist_real_def L2_set_def by simp
   also have "... < ?R"
-    using assms by (intro real_sqrt_less_mono add_strict_mono power2_strict_mono a)
+    using assms by (intro real_sqrt_less_mono sum_strict_mono power2_strict_mono a) auto
   finally show ?thesis by simp
 qed
+find_theorems "of_int ?x \<le>  of_int ?y"
 
 lemma grid_dist_upperI:
   fixes p q :: point
+  fixes d :: real
   assumes "d > 0"
-  assumes "\<bar>\<lfloor>fst p/d\<rfloor>-\<lfloor>fst q/d\<rfloor>\<bar> \<le> s" "\<bar>\<lfloor>snd p/d\<rfloor>-\<lfloor>snd q/d\<rfloor>\<bar> \<le> s"
+  assumes "\<And>k. \<bar>\<lfloor>p$k/d\<rfloor>-\<lfloor>q$k/d\<rfloor>\<bar> \<le> s" 
   shows "dist p q < d * (s+1) * sqrt 2"
 proof -
-  have "dist p q < sqrt ((d*(\<bar>\<lfloor>fst p/d\<rfloor>-\<lfloor>fst q/d\<rfloor>\<bar>+1))^2 + (d*(\<bar>\<lfloor>snd p/d\<rfloor>-\<lfloor>snd q/d\<rfloor>\<bar>+1))^2)"
+  have s_ge_0: "s \<ge> 0" using assms(2)[where k="0"] by simp
+  have "dist p q < sqrt (\<Sum>i \<in> UNIV. (d*(\<bar>\<lfloor>p$i/d\<rfloor>-\<lfloor>q$i/d\<rfloor>\<bar>+1))^2)"
     by (intro grid_dist_upper assms)
-  also have "... \<le> sqrt ((d*(s+1))^2 + (d*(s+1))^2)"
-    using assms by (intro real_sqrt_le_mono add_mono power_mono mult_left_mono) auto
+  also have "... \<le> sqrt (\<Sum>i \<in> (UNIV::2 set). (d*(s+1))^2)"
+    using assms 
+    by (intro real_sqrt_le_mono sum_mono power_mono mult_left_mono iffD2[OF of_int_le_iff]) auto
   also have "... = sqrt (2 * (d*(s+1))^2)" by simp
   also have "... = sqrt 2 * sqrt ((d*(s+1))^2)" by (simp add:real_sqrt_mult)
-  also have "... = sqrt 2 * (d * (s+1))" using assms by simp
+  also have "... = sqrt 2 * (d * (s+1))" using assms s_ge_0 by simp
   also have "... =  d * (s+1) * sqrt 2" by simp
   finally show ?thesis by simp
 qed
@@ -213,11 +131,11 @@ lemma close_point_approx_upper:
   fixes G :: "int \<times> int \<Rightarrow> real"
   assumes "d > 0" "e > 0"
   defines "s \<equiv> \<lceil>d / e\<rceil>"
-  defines "G \<equiv> (\<lambda>x. real (length (build_grid xs e (fst x) (snd x))))"
+  defines "G \<equiv> (\<lambda>x. real (length (filter (\<lambda>p. to_grid e p = x)  xs)))"
   shows "close_point_size xs d \<le> (\<Sum>i \<in> {-s..s}\<times>{-s..s}. sum' (\<lambda>x. G x * G (x+i)) UNIV)"
     (is "?L \<le> ?R")
 proof -
-  let ?f = "(\<lambda>x. (\<lfloor>fst x/e\<rfloor>,\<lfloor>snd x/e\<rfloor>))" 
+  let ?f = "to_grid e" 
   let ?pairs = "mset (List.product xs xs)"
 
   define T where "T = {-s..s} \<times> {-s..s}"
@@ -249,7 +167,7 @@ proof -
   have b:"f (?f p) - f (?f q) \<in> {-s..s}" if "f = fst \<or> f = snd" "dist p q < d" for p q f
   proof -
     have "\<bar>f (?f p) - f (?f q)\<bar> \<le> \<lceil>dist p q/e\<rceil>"
-      using grid_dist[OF assms(2), where p="p" and q="q"] that(1) by auto
+      using grid_dist[OF assms(2), where p="p" and q="q"] that(1) unfolding to_grid_def by auto
     also have "... \<le> s"
       unfolding s_def using that(2) assms(1,2) 
       by (simp add: ceiling_mono divide_le_cancel)
@@ -257,8 +175,8 @@ proof -
     thus ?thesis using s_ge_0 by auto
   qed
 
-  hence c:"?f p - ?f q \<in> T" if "dist p q < d" for p q
-    unfolding T_def using b[OF _ that] by force
+  have c:"?f p - ?f q \<in> T" if "dist p q < d" for p q
+    unfolding T_def using b[OF _ that] unfolding mem_Times_iff by simp
 
   have "?L = size (filter_mset (\<lambda>(p,q). dist p q < d) ?pairs)"
     unfolding close_point_size_def by (metis mset_filter size_mset)
@@ -271,17 +189,18 @@ proof -
   also have "... = ?R" unfolding T_def by simp
   finally show ?thesis by simp
 qed
+find_theorems "(?x,?y) = (?u, ?v)"
 
 lemma close_point_approx_lower:
   fixes xs :: "point list"
   fixes G :: "int \<times> int \<Rightarrow> real"
   fixes d :: real
   assumes "d > 0"
-  defines "G \<equiv> (\<lambda>x. real (length (build_grid xs d (fst x) (snd x))))"
+  defines "G \<equiv> (\<lambda>x. real (length (filter (\<lambda>p. to_grid d p = x)  xs)))"
   shows "sum' (\<lambda>x. G x ^ 2) UNIV \<le> close_point_size xs (d * sqrt 2)"
     (is "?L \<le> ?R")
 proof -
-  let ?f = "(\<lambda>x. (\<lfloor>fst x/d\<rfloor>,\<lfloor>snd x/d\<rfloor>))" 
+  let ?f = "to_grid d" 
   let ?pairs = "mset (List.product xs xs)"
 
   have "?L = sum' (\<lambda>x. length (filter (\<lambda>p. ?f p = x) xs)^2) UNIV "
@@ -298,35 +217,37 @@ proof -
     by (intro sum.cong' arg_cong[where f="real"] arg_cong[where f="size"] filter_mset_cong) auto
   also have "... = size {# p \<in># {# p \<in># ?pairs. ?f (fst p) = ?f (snd p) #}. ?f (fst p) \<in> UNIV #}" 
     by (intro arg_cong[where f="real"] size_filter_mset_decompose'[symmetric])
-  also have "... \<le> size {# p \<in># ?pairs. ?f (fst p) = ?f (snd p) #}"
-    by simp
+  also have "... \<le> size {# p \<in># ?pairs. ?f (fst p) = ?f (snd p) #}" by simp
+  also have "... = size {# p \<in># ?pairs. \<forall>k. \<lfloor>fst p $ k/d\<rfloor> = \<lfloor>snd p $ k/d\<rfloor> #}" 
+    unfolding to_grid_def prod.inject
+    by (intro arg_cong[where f="size"] arg_cong[where f="of_nat"] filter_mset_cong refl)
+     (metis (full_types) exhaust_2 one_neq_zero)
   also have "... \<le> size {# p \<in># ?pairs. dist (fst p) (snd p) < d * of_int (0+1) * sqrt 2 #}"
-    by (intro of_nat_mono size_mset_mono multiset_filter_mono_2 grid_dist_upperI[OF assms(1)]) auto
+    by (intro of_nat_mono size_mset_mono multiset_filter_mono_2 grid_dist_upperI[OF assms(1)]) simp
   also have "... = ?R" unfolding close_point_size_def 
     by (simp add:case_prod_beta') (metis (no_types, lifting) mset_filter size_mset)
   finally show ?thesis by simp
 qed
 
 lemma build_grid_finite:
-  assumes "inj (\<lambda>x. (f x, g x))"
-  shows "finite {x. build_grid xs d (f x) (g x) \<noteq> []}"
+  assumes "inj f"
+  shows "finite {x. filter (\<lambda>p. to_grid d p = f x) xs \<noteq> []}"
 proof -
-  have 0:"finite ((\<lambda>(x,y). (\<lfloor>x/d\<rfloor>,\<lfloor>y/d\<rfloor>)) ` set xs)"
-    by (intro finite_imageI) auto
-  have "finite {x. build_grid xs d (fst x) (snd x) \<noteq> []}"
-    unfolding build_grid_def by (intro finite_subset[OF _ 0]) (auto simp:filter_empty_conv) 
-  hence "finite ((\<lambda>x. (f x, g x)) -` {x. build_grid xs d (fst x) (snd x) \<noteq> []})"
-    by (intro finite_vimageI assms)
+  have 0:"finite (to_grid d ` set xs)" by (intro finite_imageI) auto
+  have "finite {x. filter (\<lambda>p. to_grid d p = x) xs \<noteq> []}" 
+    unfolding filter_empty_conv by (intro finite_subset[OF _ 0]) blast
+  hence "finite (f -` {x. filter (\<lambda>p. to_grid d p = x) xs \<noteq> []})" by (intro finite_vimageI assms)
   thus ?thesis by (simp add:vimage_def)
 qed
 
 lemma growth_lemma:
+  fixes xs :: "point list"
   assumes "a > 0" "d > 0"
   shows "close_point_size xs (a * d) \<le> (2 * sqrt 2 * a + 3)^2 * close_point_size xs d" 
     (is "?L \<le> ?R")
 proof -
   let ?s = "\<lceil>a * sqrt 2\<rceil>"
-  let ?G = "(\<lambda>x. real (length (build_grid xs (d/sqrt 2) (fst x) (snd x))))"
+  let ?G = "(\<lambda>x. real (length (filter (\<lambda>p. to_grid (d/sqrt 2) p = x)  xs)))"
   let ?I = "{-?s..?s}\<times>{-?s..?s}"
 
   have "?s \<ge> 1" using assms by auto
@@ -337,7 +258,7 @@ proof -
   have "?L \<le> (\<Sum>i\<in>{-?s..?s}\<times>{-?s..?s}. sum' (\<lambda>x. ?G x * ?G (x+i)) UNIV)"
     using assms unfolding a by (intro close_point_approx_upper) auto
   also have "... \<le> (\<Sum>i\<in>?I. sqrt (sum' (\<lambda>x. ?G x^2) UNIV) * sqrt (sum' (\<lambda>x. ?G (x+i)^2) UNIV))"
-    by (intro sum_mono cauchy_schwarz') (auto intro:build_grid_finite inj_translate)
+    by (intro sum_mono cauchy_schwarz') (auto intro: inj_translate build_grid_finite)
   also have "... = (\<Sum>i\<in>?I. sqrt (sum' (\<lambda>x. ?G x^2) UNIV) * sqrt (sum' (\<lambda>x. ?G x^2) UNIV))"
     by (intro arg_cong2[where f="(\<lambda>x y. sqrt x * sqrt y)"] sum.cong refl 
         sum.reindex_bij_betw' bij_plus_right)
