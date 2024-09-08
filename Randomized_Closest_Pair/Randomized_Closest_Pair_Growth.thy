@@ -155,7 +155,6 @@ proof -
     using assms by (intro real_sqrt_less_mono sum_strict_mono power2_strict_mono a) auto
   finally show ?thesis by simp
 qed
-find_theorems "of_int ?x \<le>  of_int ?y"
 
 lemma grid_dist_upperI:
   fixes p q :: point
@@ -240,7 +239,6 @@ proof -
   also have "... = ?R" unfolding T_def by simp
   finally show ?thesis by simp
 qed
-find_theorems "(?x,?y) = (?u, ?v)"
 
 lemma close_point_approx_lower:
   fixes xs :: "point list"
