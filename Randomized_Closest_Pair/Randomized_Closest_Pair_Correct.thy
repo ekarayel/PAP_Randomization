@@ -12,7 +12,7 @@ theory Randomized_Closest_Pair_Correct
   imports Randomized_Closest_Pair
 begin
 
-definition min_dist :: "('a::metric_space) list \<Rightarrow> real" 
+definition min_dist :: "('a::metric_space) list \<Rightarrow> real"
   where "min_dist xs = Min {dist x y|x y. {# x, y#} \<subseteq># mset xs}"
 
 text \<open>For a list with length at least two, the result is the minimum distance between the points
@@ -33,7 +33,7 @@ proof -
 qed
 
 lemma min_dist_ne:  "length xs \<ge> 2 \<longleftrightarrow> {dist x y|x y. {# x,y#} \<subseteq># mset xs} \<noteq> {}" (is "?L \<longleftrightarrow> ?R")
-proof 
+proof
   assume ?L
   then obtain xh1 xh2 xt where xs:"xs=xh1#xh2#xt" by (metis Suc_le_length_iff numerals(2))
   hence "{#xh1,xh2#} \<subseteq># mset xs" unfolding xs by simp
@@ -48,7 +48,7 @@ next
 qed
 lemmas min_dist_neI = iffD1[OF min_dist_ne]
 
-lemma min_dist_nonneg: 
+lemma min_dist_nonneg:
   assumes "length xs \<ge> 2"
   shows "min_dist xs \<ge> 0"
   unfolding min_dist_def by (intro Min.boundedI min_dist_set_fin assms iffD1[OF min_dist_ne]) auto
@@ -108,7 +108,7 @@ lemma size_filter_mset_decompose':
   (is "?L = ?R")
 proof -
   let ?T = "f ` set_mset xs \<inter> T"
-  have "?L = size (filter_mset (\<lambda>x. f x \<in> ?T) xs)" 
+  have "?L = size (filter_mset (\<lambda>x. f x \<in> ?T) xs)"
     by (intro arg_cong[where f="size"] filter_mset_cong) auto
   also have "... = (\<Sum>t \<in> ?T. size (filter_mset (\<lambda>x. f x = t) xs))"
     by (intro size_filter_mset_decompose) auto
@@ -133,16 +133,16 @@ lemma power2_strict_mono:
   fixes x y :: "'a :: linordered_idom"
   assumes "\<bar>x\<bar> < \<bar>y\<bar>"
   shows "x^2 < y^2"
-  using assms unfolding power2_eq_square  
+  using assms unfolding power2_eq_square
   by (metis abs_mult_less abs_mult_self_eq)
 
-definition "grid ps d = \<lparr> g_dist = d, g_lookup = (\<lambda>q. map_tm return (filter (\<lambda>x. to_grid d x = q) ps)) \<rparr>" 
+definition "grid ps d = \<lparr> g_dist = d, g_lookup = (\<lambda>q. map_tm return (filter (\<lambda>x. to_grid d x = q) ps)) \<rparr>"
 
 lemma build_grid_val: "val (build_grid ps d) = grid ps d"
   unfolding build_grid_def grid_def by simp
 
 lemma lookup_neighborhood:
-  "mset (val (lookup_neighborhood (grid ps d) p)) = 
+  "mset (val (lookup_neighborhood (grid ps d) p)) =
   filter_mset (\<lambda>x. to_grid d x - to_grid d p \<in> {(0,0),(0,1),(1,-1),(1,0),(1,1)}) (mset ps) - {#p#}"
 proof -
   define ls where  "ls = [(0::int,0::int),(0,1),(1,-1),(1,0),(1,1)]"
@@ -150,15 +150,15 @@ proof -
   define cs where "cs = map ((+) (to_grid (g_dist g) p)) ([(0,0),(0,1),(1,-1),(1,0),(1,1)])"
 
   have distinct_ls: "distinct ls" unfolding ls_def by (simp add: upto.simps)
- 
-  have "mset (concat (map (\<lambda>x. val (g_lookup g (x + to_grid (g_dist g) p))) ls)) = 
+
+  have "mset (concat (map (\<lambda>x. val (g_lookup g (x + to_grid (g_dist g) p))) ls)) =
     mset (concat (map (\<lambda>x. filter (\<lambda>q. to_grid d q - to_grid d p = x) ps) ls))"
     by (simp add:grid_def filter_eq_val_filter_tm cs_def comp_def algebra_simps ls_def g_def)
   also have "... = {# q \<in># mset ps. to_grid d q - to_grid d p \<in> set ls #}"
     using distinct_ls by (induction ls) (simp_all add:filter_mset_disj, metis)
   also have "... = {#x \<in># mset ps. to_grid d x - to_grid d p \<in> {(0,0),(0,1),(1,-1),(1,0),(1,1)}#}"
     unfolding ls_def by simp
-  finally have a: 
+  finally have a:
     "mset (concat (map (\<lambda>x. val (g_lookup g (x + to_grid (g_dist g) p))) ls)) =
     {#x \<in># mset ps. to_grid d x - to_grid d p \<in> {(0,0),(0,1),(1,-1),(1,0),(1,1)}#}" by simp
 
@@ -171,12 +171,12 @@ lemma fin_nat_pairs: "finite {(i, j). i < j \<and> j < (n::nat)}"
   by (rule finite_subset[where B="{..<n }\<times>{..<n}"]) auto
 
 lemma mset_list_subset:
-  assumes "distinct ys" "set ys \<subseteq> {..<length xs}" 
+  assumes "distinct ys" "set ys \<subseteq> {..<length xs}"
   shows  "mset (map ((!) xs) ys) \<subseteq># mset xs" (is "?L \<subseteq># ?R")
 proof -
   have "mset ys \<subseteq># mset [0..<length xs]" using assms
     by (metis finite_lessThan mset_set_set mset_set_upto_eq_mset_upto subset_imp_msubset_mset_set)
-  hence "image_mset ((!) xs) (mset ys) \<subseteq># image_mset ((!) xs) (mset ([0..<length xs]))" 
+  hence "image_mset ((!) xs) (mset ys) \<subseteq># image_mset ((!) xs) (mset ([0..<length xs]))"
     by (intro image_mset_subseteq_mono)
   moreover have "image_mset ((!) xs) (mset ([0..<length xs])) = mset xs" by (metis map_nth mset_map)
   ultimately show ?thesis by simp
@@ -207,16 +207,12 @@ proof -
     by (intro AE_pmfI) (auto)
 qed
 
-lemma val_replicate_tpmf: 
-  "map_pmf val (replicate_tpmf n x) = replicate_pmf n (map_pmf val x)"
-  by (induction n) (simp_all add:val_tpmf_simps)
-
 lemma first_phase:
   assumes "length ps \<ge> 2"
   shows "AE d in map_pmf val (first_phase ps). min_dist ps \<le> d"
 proof -
-  have "min_dist ps \<le> val (min_list_tm ds)" 
-    if ds_range:"set ds\<subseteq>set_pmf(map_pmf val (sample_distance ps))" and "length ds=length ps" for ds 
+  have "min_dist ps \<le> val (min_list_tm ds)"
+    if ds_range:"set ds\<subseteq>set_pmf(map_pmf val (sample_distance ps))" and "length ds=length ps" for ds
   proof -
     have ds_ne: "ds \<noteq> []" using assms that(2) by auto
 
@@ -284,7 +280,7 @@ proof -
   have a:"{-1..1} = {-1,0,1::int}" by auto
   let ?r = "to_grid d q - to_grid d p"
   have "?r \<in> {-1..1}\<times>{-1..1}" by (intro grid_dist_2 assms(1-2))
-  moreover have "?r \<notin> {(-1,0),(-1,-1),(-1,1),(0,-1)}" using assms(3) 
+  moreover have "?r \<notin> {(-1,0),(-1,-1),(-1,1),(0,-1)}" using assms(3)
     unfolding grid_lex_ord_def insert_iff de_Morgan_disj
     by (intro conjI notI) (simp_all add:algebra_simps)
   ultimately show ?thesis unfolding a by simp
@@ -292,23 +288,23 @@ qed
 
 lemma second_phase_aux:
   assumes "d > 0" "min_dist ps \<le> d" "length ps \<ge> 2"
-  obtains u v where 
+  obtains u v where
     "min_dist ps = dist u v"
     "{#u, v#} \<subseteq># mset ps"
-    "grid_lex_ord (to_grid d u) (to_grid d v)" 
+    "grid_lex_ord (to_grid d u) (to_grid d v)"
     "u \<in> set ps" "v \<in> set (val (lookup_neighborhood (grid ps d) u))"
 proof -
   have "\<exists>u v. min_dist ps = dist u v \<and> {#u, v#} \<subseteq># mset ps"
     unfolding min_dist_def using Min_in[OF min_dist_set_fin min_dist_neI[OF assms(3)]] by auto
 
   then obtain u v where uv:
-    "min_dist ps = dist u v" "{#u, v#} \<subseteq># mset ps" 
-    "grid_lex_ord (to_grid d u) (to_grid d v)" 
+    "min_dist ps = dist u v" "{#u, v#} \<subseteq># mset ps"
+    "grid_lex_ord (to_grid d u) (to_grid d v)"
     using add_mset_commute dist_commute grid_lex_order_antisym by (metis (no_types, lifting))
 
   have u_range: "u \<in> set ps" using uv(2) set_mset_mono by fastforce
 
-  have "to_grid d v - to_grid d u \<in> {(0,0),(0,1),(1,-1),(1,0),(1,1)}" 
+  have "to_grid d v - to_grid d u \<in> {(0,0),(0,1),(1,-1),(1,0),(1,1)}"
     using assms(1,2) uv(1,3) by (intro grid_dist_3) (simp_all add:dist_commute)
 
   hence "v \<in># mset (val (lookup_neighborhood (grid ps d) u))"
@@ -327,8 +323,8 @@ proof -
     unfolding min_dist_def using Min_in[OF min_dist_set_fin min_dist_neI[OF assms(3)]] by auto
 
   then obtain u v where uv:
-    "min_dist ps = dist u v" "{#u, v#} \<subseteq># mset ps" 
-    "grid_lex_ord (to_grid d u) (to_grid d v)" 
+    "min_dist ps = dist u v" "{#u, v#} \<subseteq># mset ps"
+    "grid_lex_ord (to_grid d u) (to_grid d v)"
     and u_range: "u \<in> set ps"
     and v_range: "v \<in> set (val (lookup_neighborhood (grid ps d) u))"
     using second_phase_aux[OF assms] by auto
@@ -347,7 +343,7 @@ proof -
     have "y \<in># mset (val (lookup_neighborhood (grid ps d) x))" using that by simp
     moreover have "mset (val (lookup_neighborhood (grid ps d) x)) \<subseteq>#  mset ps - {#x#}"
       using that(1) unfolding lookup_neighborhood subset_eq_diff_conv by simp
-    ultimately have "y \<in># mset ps - {#x#}" by (metis mset_subset_eqD) 
+    ultimately have "y \<in># mset ps - {#x#}" by (metis mset_subset_eqD)
     moreover have "x \<in># mset ps" using that(1) by simp
     ultimately show "{#x, y#} \<subseteq># mset ps" by (simp add: insert_subset_eq_iff)
   qed
@@ -372,8 +368,8 @@ theorem closest_pair_correct:
 proof -
   define fp where "fp = map_pmf val (first_phase ps)"
 
-  have "r = min_dist ps" if 
-    "d \<in> fp" 
+  have "r = min_dist ps" if
+    "d \<in> fp"
     "r = (if d = 0 then 0 else val (second_phase d ps))" for r d
   proof -
     have d_ge: "d \<ge> min_dist ps"
@@ -381,16 +377,16 @@ proof -
     show ?thesis
     proof (cases "d > 0")
       case True
-      thus ?thesis using second_phase[OF True d_ge assms] that(2) 
+      thus ?thesis using second_phase[OF True d_ge assms] that(2)
         by (simp add: AE_measure_pmf_iff)
     next
       case False
       hence "d = 0" "min_dist ps = 0" using d_ge min_dist_nonneg[OF assms] by auto
-      then show ?thesis using that(2) by auto 
+      then show ?thesis using that(2) by auto
     qed
   qed
   thus ?thesis unfolding closest_pair_def val_tpmf_simps fp_def[symmetric] if_distrib
-    by (intro AE_pmfI) (auto simp:if_distrib)  
+    by (intro AE_pmfI) (auto simp:if_distrib)
 qed
 
 end

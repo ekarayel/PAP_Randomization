@@ -11,7 +11,7 @@ $p_1,\ldots,p_n$, with distance less than $d$:
 Obviously, $N(d)$ is monotone. It is possible to show that the growth of
 $N(d)$ is bounded.
 
-In particular: 
+In particular:
 \[
   N(ad) \leq (2a \sqrt{2}+3)^2 N(d)
 \]
@@ -21,7 +21,7 @@ for all $a > 0$, $d > 0$. As far as we can tell the proof below is new.
 the number of points that fall in the cell $(x,y) \in \mathbb Z \times \mathbb Z$, i.e.:
 
 \[
-G(x,y) := \left| \left\{ i \middle | \left\lfloor \frac{p_{i,1}}{\alpha} \right\rfloor = x \wedge 
+G(x,y) := \left| \left\{ i \middle | \left\lfloor \frac{p_{i,1}}{\alpha} \right\rfloor = x \wedge
   \left\lfloor \frac{p_{i,2}}{\alpha} \right\rfloor = x \right\} \right| \textrm{,}
 \]
 where $p_{i,1}$ (resp. $p_{i,2}$) denote the first (resp. second) component of point p.
@@ -39,7 +39,7 @@ N(ad) & \leq & \sum_{(x,y)\in\mathbb Z\times\mathbb Z} \sum_{i=-s}^{s} \sum_{j=-
 & \leq & (2a \sqrt(2)+3)^2 N(d)
 \end{eqnarray*}
 
-The first inequality follows from the fact that if two points are $ad$ close, 
+The first inequality follows from the fact that if two points are $ad$ close,
 their x-coordinates and y-coordinates will differ by at most $ad$. I.e. their grid coordinates will
 differ at most by $s$. This means the pair will be accounted for in the right hand side of the
 inequality.
@@ -76,7 +76,7 @@ proof -
   thus ?thesis unfolding sum.G_def by simp
 qed
 
-lemma sum'_mono: 
+lemma sum'_mono:
   fixes f :: "'a \<Rightarrow> 'b :: {ordered_comm_monoid_add}"
   assumes "\<And>x. x \<in> S \<Longrightarrow> f x \<le> g x"
   assumes "finite {x \<in> S. f x \<noteq> 0}"
@@ -93,7 +93,7 @@ proof -
   finally show ?thesis by simp
 qed
 
-lemma cauchy_schwarz': 
+lemma cauchy_schwarz':
   assumes "finite {i \<in> S. f i \<noteq> 0}"
   assumes "finite {i \<in> S. g i \<noteq> 0}"
   shows "sum' (\<lambda>i. f i * g i) S \<le> sqrt (sum' (\<lambda>i. f i^2) S) * sqrt (sum' (\<lambda>i. g i^2) S)"
@@ -116,7 +116,7 @@ context comm_monoid_set
 begin
 
 lemma reindex_bij_betw':
-  assumes "bij_betw h S T" 
+  assumes "bij_betw h S T"
   shows "G (\<lambda>x. g (h x)) S = G g T"
 proof -
   have "h ` {x \<in> S. g (h x) \<noteq> \<^bold>1} = {x \<in> T. g x \<noteq> \<^bold>1}"
@@ -161,14 +161,14 @@ lemma grid_dist_upperI:
   fixes p q :: point
   fixes d :: real
   assumes "d > 0"
-  assumes "\<And>k. \<bar>\<lfloor>p$k/d\<rfloor>-\<lfloor>q$k/d\<rfloor>\<bar> \<le> s" 
+  assumes "\<And>k. \<bar>\<lfloor>p$k/d\<rfloor>-\<lfloor>q$k/d\<rfloor>\<bar> \<le> s"
   shows "dist p q < d * (s+1) * sqrt 2"
 proof -
   have s_ge_0: "s \<ge> 0" using assms(2)[where k="0"] by simp
   have "dist p q < sqrt (\<Sum>i \<in> UNIV. (d*(\<bar>\<lfloor>p$i/d\<rfloor>-\<lfloor>q$i/d\<rfloor>\<bar>+1))^2)"
     by (intro grid_dist_upper assms)
   also have "... \<le> sqrt (\<Sum>i \<in> (UNIV::2 set). (d*(s+1))^2)"
-    using assms 
+    using assms
     by (intro real_sqrt_le_mono sum_mono power_mono mult_left_mono iffD2[OF of_int_le_iff]) auto
   also have "... = sqrt (2 * (d*(s+1))^2)" by simp
   also have "... = sqrt 2 * sqrt ((d*(s+1))^2)" by (simp add:real_sqrt_mult)
@@ -186,15 +186,15 @@ lemma close_point_approx_upper:
   shows "close_point_size xs d \<le> (\<Sum>i \<in> {-s..s}\<times>{-s..s}. sum' (\<lambda>x. G x * G (x+i)) UNIV)"
     (is "?L \<le> ?R")
 proof -
-  let ?f = "to_grid e" 
+  let ?f = "to_grid e"
   let ?pairs = "mset (List.product xs xs)"
 
   define T where "T = {-s..s} \<times> {-s..s}"
 
   have "s \<ge> 1" unfolding s_def using assms by simp
-  hence s_ge_0: "s \<ge> 0" by simp 
+  hence s_ge_0: "s \<ge> 0" by simp
 
-  have 0: "finite T" unfolding T_def by simp 
+  have 0: "finite T" unfolding T_def by simp
 
   have a: "size {#p \<in># ?pairs. ?f (fst p)-?f (snd p) = i #} = sum' (\<lambda>x. G x * G (x+i)) UNIV"
     (is "?L1 = ?R1") for i
@@ -204,14 +204,14 @@ proof -
     also have "... = sum' (\<lambda>q. size {# p \<in># ?pairs. (?f (fst p), ?f (snd p))= q #} ) {(x,y). x-y=i}"
       unfolding size_filter_mset_decompose' by simp
     also have "... = sum' (\<lambda>q. size {# p \<in># ?pairs. (?f (fst p), ?f (snd p)) = (q+i,q) #}) UNIV"
-      by (intro arg_cong[where f="real"] sum.reindex_bij_betw'[symmetric] bij_betwI[where g="snd"]) 
+      by (intro arg_cong[where f="real"] sum.reindex_bij_betw'[symmetric] bij_betwI[where g="snd"])
         auto
     also have "... =
       sum' (\<lambda>q. length (filter (\<lambda>p. ?f (fst p) = q+i \<and> ?f (snd p) = q) (List.product xs xs))) UNIV"
       by (simp flip: size_mset mset_filter conj_commute)
     also have "... = sum' (\<lambda>x. G (x+i) * G x) UNIV"
       by (subst filter_product)
-        (simp add:G_def build_grid_def of_nat_sum' case_prod_beta' prod_eq_iff) 
+        (simp add:G_def build_grid_def of_nat_sum' case_prod_beta' prod_eq_iff)
     finally show ?thesis by (simp add:algebra_simps)
   qed
 
@@ -220,7 +220,7 @@ proof -
     have "\<bar>f (?f p) - f (?f q)\<bar> \<le> \<lceil>dist p q/e\<rceil>"
       using grid_dist[OF assms(2), where p="p" and q="q"] that(1) unfolding to_grid_def by auto
     also have "... \<le> s"
-      unfolding s_def using that(2) assms(1,2) 
+      unfolding s_def using that(2) assms(1,2)
       by (simp add: ceiling_mono divide_le_cancel)
     finally have "\<bar>f (?f p) - f (?f q)\<bar> \<le> s" by simp
     thus ?thesis using s_ge_0 by auto
@@ -251,7 +251,7 @@ lemma close_point_approx_lower:
   shows "sum' (\<lambda>x. G x ^ 2) UNIV \<le> close_point_size xs (d * sqrt 2)"
     (is "?L \<le> ?R")
 proof -
-  let ?f = "to_grid d" 
+  let ?f = "to_grid d"
   let ?pairs = "mset (List.product xs xs)"
 
   have "?L = sum' (\<lambda>x. length (filter (\<lambda>p. ?f p = x) xs)^2) UNIV "
@@ -264,18 +264,18 @@ proof -
     by (intro arg_cong2[where f="sum'"] arg_cong[where f="real"] refl ext)
      (metis (no_types, lifting) mset_filter size_mset)
   also have "... = sum' (\<lambda>x. size {# p \<in>#{# p\<in>#?pairs. ?f(fst p)=?f(snd p) #}. ?f(fst p)=x #}) UNIV"
-    unfolding filter_filter_mset 
+    unfolding filter_filter_mset
     by (intro sum.cong' arg_cong[where f="real"] arg_cong[where f="size"] filter_mset_cong) auto
-  also have "... = size {# p \<in># {# p \<in># ?pairs. ?f (fst p) = ?f (snd p) #}. ?f (fst p) \<in> UNIV #}" 
+  also have "... = size {# p \<in># {# p \<in># ?pairs. ?f (fst p) = ?f (snd p) #}. ?f (fst p) \<in> UNIV #}"
     by (intro arg_cong[where f="real"] size_filter_mset_decompose'[symmetric])
   also have "... \<le> size {# p \<in># ?pairs. ?f (fst p) = ?f (snd p) #}" by simp
-  also have "... = size {# p \<in># ?pairs. \<forall>k. \<lfloor>fst p $ k/d\<rfloor> = \<lfloor>snd p $ k/d\<rfloor> #}" 
+  also have "... = size {# p \<in># ?pairs. \<forall>k. \<lfloor>fst p $ k/d\<rfloor> = \<lfloor>snd p $ k/d\<rfloor> #}"
     unfolding to_grid_def prod.inject
     by (intro arg_cong[where f="size"] arg_cong[where f="of_nat"] filter_mset_cong refl)
      (metis (full_types) exhaust_2 one_neq_zero)
   also have "... \<le> size {# p \<in># ?pairs. dist (fst p) (snd p) < d * of_int (0+1) * sqrt 2 #}"
     by (intro of_nat_mono size_mset_mono multiset_filter_mono_2 grid_dist_upperI[OF assms(1)]) simp
-  also have "... = ?R" unfolding close_point_size_def 
+  also have "... = ?R" unfolding close_point_size_def
     by (simp add:case_prod_beta') (metis (no_types, lifting) mset_filter size_mset)
   finally show ?thesis by simp
 qed
@@ -285,7 +285,7 @@ lemma build_grid_finite:
   shows "finite {x. filter (\<lambda>p. to_grid d p = f x) xs \<noteq> []}"
 proof -
   have 0:"finite (to_grid d ` set xs)" by (intro finite_imageI) auto
-  have "finite {x. filter (\<lambda>p. to_grid d p = x) xs \<noteq> []}" 
+  have "finite {x. filter (\<lambda>p. to_grid d p = x) xs \<noteq> []}"
     unfolding filter_empty_conv by (intro finite_subset[OF _ 0]) blast
   hence "finite (f -` {x. filter (\<lambda>p. to_grid d p = x) xs \<noteq> []})" by (intro finite_vimageI assms)
   thus ?thesis by (simp add:vimage_def)
@@ -296,7 +296,7 @@ text \<open>Main result of this section:\<close>
 lemma growth_lemma:
   fixes xs :: "point list"
   assumes "a > 0" "d > 0"
-  shows "close_point_size xs (a * d) \<le> (2 * sqrt 2 * a + 3)^2 * close_point_size xs d" 
+  shows "close_point_size xs (a * d) \<le> (2 * sqrt 2 * a + 3)^2 * close_point_size xs d"
     (is "?L \<le> ?R")
 proof -
   let ?s = "\<lceil>a * sqrt 2\<rceil>"
@@ -313,10 +313,10 @@ proof -
   also have "... \<le> (\<Sum>i\<in>?I. sqrt (sum' (\<lambda>x. ?G x^2) UNIV) * sqrt (sum' (\<lambda>x. ?G (x+i)^2) UNIV))"
     by (intro sum_mono cauchy_schwarz') (auto intro: inj_translate build_grid_finite)
   also have "... = (\<Sum>i\<in>?I. sqrt (sum' (\<lambda>x. ?G x^2) UNIV) * sqrt (sum' (\<lambda>x. ?G x^2) UNIV))"
-    by (intro arg_cong2[where f="(\<lambda>x y. sqrt x * sqrt y)"] sum.cong refl 
+    by (intro arg_cong2[where f="(\<lambda>x y. sqrt x * sqrt y)"] sum.cong refl
         sum.reindex_bij_betw' bij_plus_right)
   also have "... = (\<Sum>i\<in>?I. \<bar>sum' (\<lambda>x. ?G x^2) UNIV\<bar>)" by simp
-  also have "... = (2* ?s + 1)^2 * \<bar>sum' (\<lambda>x. ?G x^2) UNIV\<bar>" 
+  also have "... = (2* ?s + 1)^2 * \<bar>sum' (\<lambda>x. ?G x^2) UNIV\<bar>"
     using s_ge_0 by (auto simp: power2_eq_square)
   also have "... = (2* ?s + 1)^2 * sum' (\<lambda>x. ?G x^2) UNIV"
     by (intro arg_cong2[where f="(*)"] refl abs_of_nonneg sum'_nonneg) auto
